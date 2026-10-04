@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ペットのお薬・サプリ飲み忘れ防止カレンダー</title>
+    <style>
+        :root {
+            --primary: #FF7043;
+            --primary-light: #FFCCBC;
+            --secondary: #26A69A;
+            --secondary-light: #B2DFDB;
+            --bg-color: #F8F9FA;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
+            --text-sub: #757575;
+            --border-color: #E0E0E0;
+            --danger: #EF5350;
+            --success: #66BB6A;
+            --radius: 12px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: var(--text-main);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            padding: 16px;
+            color: var(--text-main);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        header p {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-top: 4px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: #eee;
+            border-radius: var(--radius);
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            color: var(--text-sub);
+        }
+
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* Cards & Layout */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: var(--text-sub);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            width: auto;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        /* Calendar View */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .calendar-header button {
+            background: none;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--text-sub);
+            padding-bottom: 6px;
+        }
+
+        .weekday:nth-child(1) { color: var(--danger); }
+        .weekday:nth-child(7) { color: #2196F3; }
+
+        .day-cell {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            min-height: 75px;
+            padding: 4px;
+            font-size: 0.8rem;
+            position: relative;
+        }
+
+        .day-cell.other-month {
+            background: #fdfdfd;
+            opacity: 0.4;
+        }
+
+        .day-cell.today {
+            border-color: var(--primary);
+            background: #FFF9F8;
+        }
+
+        .day-number {
+            font-weight: bold;
+            margin-bottom: 2px;
+            font-size: 0.75rem;
+        }
+
+        .schedule-chip {
+            font-size: 0.65rem;
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .schedule-chip.done {
+            background: #E8F5E9;
+            color: #2E7D32;
+            text-decoration: line-through;
+        }
+
+        .schedule-chip.pending {
+            background: var(--primary-light);
+            color: #D84315;
+        }
+
+        /* List / Dashboard View */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media(min-width: 600px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .pet-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            background: var(--secondary);
+            margin-right: 4px;
+        }
+
+        .item-card {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-info h4 {
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .item-info p {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+
+        /* Today Checkbox list */
+        .today-task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .today-task-item.completed {
+            background: #F1F8E9;
+            border-color: #C8E6C9;
+        }
+
+        .today-task-item.completed span {
+            text-decoration: line-through;
+            color: var(--text-sub);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--secondary);
+            cursor: pointer;
+        }
+
+        .empty-msg {
+            color: var(--text-sub);
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 100;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .flex-row {
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.04 3 5.5l7 7Z"/></svg>
+            ペットのお薬カレンダー
+        </h1>
+        <p>複数匹のペットの投薬・サプリ管理とうっかりミス防止に</p>
+    </header>
+
+    <!-- タブメニュー -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('calendar')">カレンダー</button>
+        <button class="tab-btn" onclick="switchTab('pets')">ペット登録</button>
+        <button class="tab-btn" onclick="switchTab('medicines')">お薬・サプリ登録</button>
+    </div>
+
+    <!-- カレンダー・今日ビュー -->
+    <div id="view-calendar" class="view-section active">
+        <!-- 今日のチェックリスト -->
+        <div class="card">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                本日のタスク (<span id="today-date-str"></span>)
+            </h2>
+            <div id="today-tasks-container">
+                <!-- JSで動的生成 -->
+            </div>
+        </div>
+
+        <!-- カレンダー本体 -->
+        <div class="card">
+            <div class="calendar-header">
+                <button onclick="changeMonth(-1)">＜ 先月</button>
+                <h2 id="calendar-title" style="margin:0;"></h2>
+                <button onclick="changeMonth(1)">翌月 ＞</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="weekday">日</div>
+                <div class="weekday">月</div>
+                <div class="weekday">火</div>
+                <div class="weekday">水</div>
+                <div class="weekday">木</div>
+                <div class="weekday">金</div>
+                <div class="weekday">土</div>
+            </div>
+            <div id="calendar-body" class="calendar-grid" style="margin-top: 4px;">
+                <!-- JSで動的生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ペット登録ビュー -->
+    <div id="view-pets" class="view-section">
+        <div class="card">
+            <h2>ペットの追加</h2>
+            <form id="pet-form" onsubmit="addPet(event)">
+                <div class="form-group">
+                    <label>ペットの名前</label>
+                    <input type="text" id="pet-name" required placeholder="例: ポチ、タマ">
+                </div>
+                <div class="form-group">
+                    <label>種類 / メモ</label>
+                    <input type="text" id="pet-memo" placeholder="例: トイプードル / 3歳">
+                </div>
+                <button type="submit" class="btn">ペットを登録する</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>登録済みペット一覧</h2>
+            <div id="pet-list"></div>
+        </div>
+    </div>
+
+    <!-- お薬・サプリ・スケジュール登録ビュー -->
+    <div id="view-medicines" class="view-section">
+        <div class="card">
+            <h2>お薬・サプリ・駆除薬の登録とスケジュール</h2>
+            <form id="med-form" onsubmit="addMedicine(event)">
+                <div class="form-group">
+                    <label>対象ペット</label>
+                    <select id="med-pet" required></select>
+                </div>
+                <div class="form-group">
+                    <label>お薬・サプリ・メニュー名</label>
+                    <input type="text" id="med-name" required placeholder="例: 心臓のお薬, フィラリア薬, 関節サプリ">
+                </div>
+                <div class="form-group">
+                    <label>投与間隔・頻度</label>
+                    <select id="med-type" onchange="toggleIntervalField()">
+                        <option value="daily">毎日</option>
+                        <option value="interval">〇日間隔（例: 2日おきなど）</option>
+                        <option value="monthly">毎月特定日（ノミダニ駆除など）</option>
+                        <option value="once">単発（指定日のみ）</option>
+                    </select>
+                </div>
+                <div class="form-group" id="interval-group" style="display:none;">
+                    <label>何日おきに投与するか</label>
+                    <input type="number" id="med-interval-days" min="2" value="2">
+                </div>
+                <div class="form-group">
+                    <label>開始日（初回投与日）</label>
+                    <input type="date" id="med-start-date" required>
+                </div>
+                <button type="submit" class="btn btn-secondary">スケジュールを作成する</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>登録済みスケジュール一覧</h2>
+            <div id="med-list"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 詳細・削除モーダル -->
+<div class="modal" id="task-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title">予定の確認</h3>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <p id="modal-desc" style="margin-bottom: 16px; font-size: 0.9rem; color: var(--text-sub);"></p>
+        <div class="flex-row">
+            <button class="btn" id="modal-toggle-btn" onclick="toggleTaskStatusFromModal()">完了にする</button>
+            <button class="btn btn-danger" onclick="deleteScheduleFromModal()">スケジュール削除</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- State Management (LocalStorage) ---
+    let appData = JSON.parse(localStorage.getItem('pet_med_data')) || {
+        pets: [],
+        medicines: [],
+        logs: {} // {'YYYY-MM-DD': { medId: true/false }}
+    };
+
+    function saveData() {
+        localStorage.setItem('pet_med_data', JSON.stringify(appData));
+    }
+
+    // --- Tab Navigation ---
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+
+        if(tabId === 'calendar') {
+            document.querySelector('.tabs button:nth-child(1)').classList.add('active');
+            document.getElementById('view-calendar').classList.add('active');
+            renderCalendar();
+            renderTodayTasks();
+        } else if(tabId === 'pets') {
+            document.querySelector('.tabs button:nth-child(2)').classList.add('active');
+            document.getElementById('view-pets').classList.add('active');
+            renderPets();
+        } else if(tabId === 'medicines') {
+            document.querySelector('.tabs button:nth-child(3)').classList.add('active');
+            document.getElementById('view-medicines').classList.add('active');
+            renderMedFormOptions();
+            renderMedicines();
+        }
+    }
+
+    // --- Pets Management ---
+    function addPet(e) {
+        e.preventDefault();
+        const name = document.getElementById('pet-name').value;
+        const memo = document.getElementById('pet-memo').value;
+        
+        appData.pets.push({ id: Date.now().toString(), name, memo });
+        saveData();
+        document.getElementById('pet-form').reset();
+        renderPets();
+        alert('ペットを登録しました！');
+    }
+
+    function deletePet(id) {
+        if(confirm('このペットと紐づくお薬スケジュールも削除されます。よろしいですか？')) {
+            appData.pets = appData.pets.filter(p => p.id !== id);
+            appData.medicines = appData.medicines.filter(m => m.petId !== id);
+            saveData();
+            renderPets();
+            renderMedicines();
+        }
+    }
+
+    function renderPets() {
+        const list = document.getElementById('pet-list');
+        if(appData.pets.length === 0) {
+            list.innerHTML = '<p class="empty-msg">ペットが登録されていません</p>';
+            return;
+        }
+        list.innerHTML = appData.pets.map(p => `
+            <div class="item-card">
+                <div class="item-info">
+                    <h4>🐾 ${escapeHtml(p.name)}</h4>
+                    <p>${escapeHtml(p.memo || '情報なし')}</p>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="deletePet('${p.id}')">削除</button>
+            </div>
+        `).join('');
+    }
+
+    // --- Medicines Management ---
+    function renderMedFormOptions() {
+        const select = document.getElementById('med-pet');
+        if(appData.pets.length === 0) {
+            select.innerHTML = '<option value="">先にペットを登録してください</option>';
+            return;
+        }
+        select.innerHTML = appData.pets.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+        
+        // デフォルト今日の日付
+        document.getElementById('med-start-date').valueAsDate = new Date();
+    }
+
+    function toggleIntervalField() {
+        const type = document.getElementById('med-type').value;
+        document.getElementById('interval-group').style.display = (type === 'interval') ? 'block' : 'none';
+    }
+
+    function addMedicine(e) {
+        e.preventDefault();
+        if(appData.pets.length === 0) {
+            alert('ペットを先に登録してください。');
+            return;
+        }
+
+        const med = {
+            id: Date.now().toString(),
+            petId: document.getElementById('med-pet').value,
+            name: document.getElementById('med-name').value,
+            type: document.getElementById('med-type').value,
+            intervalDays: parseInt(document.getElementById('med-interval-days').value) || 2,
+            startDate: document.getElementById('med-start-date').value
+        };
+
+        appData.medicines.push(med);
+        saveData();
+        document.getElementById('med-form').reset();
+        renderMedFormOptions();
+        renderMedicines();
+        alert('スケジュールを登録しました！');
+    }
+
+    function deleteMedicine(id) {
+        if(confirm('このスケジュールを削除しますか？')) {
+            appData.medicines = appData.medicines.filter(m => m.id !== id);
+            saveData();
+            renderMedicines();
+        }
+    }
+
+    function renderMedicines() {
+        const list = document.getElementById('med-list');
+        if(appData.medicines.length === 0) {
+            list.innerHTML = '<p class="empty-msg">スケジュールが登録されていません</p>';
+            return;
+        }
+
+        const petMap = {};
+        appData.pets.forEach(p => petMap[p.id] = p.name);
+
+        const typeLabels = {
+            daily: '毎日',
+            interval: '〇日間隔',
+            monthly: '毎月同日',
+            once: '単発'
+        };
+
+        list.innerHTML = appData.medicines.map(m => `
+            <div class="item-card">
+                <div class="item-info">
+                    <div><span class="pet-badge">${escapeHtml(petMap[m.petId] || '不明')}</span><strong>${escapeHtml(m.name)}</strong></div>
+                    <p>頻度: ${typeLabels[m.type]} / 開始日: ${m.startDate}</p>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="deleteMedicine('${m.id}')">削除</button>
+            </div>
+        `).join('');
+    }
+
+    // --- Schedule & Date Calculations ---
+    function isScheduledOnDate(med, dateStr) {
+        // dateStr: 'YYYY-MM-DD'
+        const dTarget = new Date(dateStr);
+        const dStart = new Date(med.startDate);
+        
+        // タイムゾーンのズレを防ぐため日付単位で比較
+        dTarget.setHours(0,0,0,0);
+        dStart.setHours(0,0,0,0);
+
+        if (dTarget < dStart) return false;
+
+        const diffTime = dTarget - dStart;
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        if (med.type === 'daily') {
+            return true;
+        } else if (med.type === 'interval') {
+            return diffDays % med.intervalDays === 0;
+        } else if (med.type === 'monthly') {
+            return dTarget.getDate() === dStart.getDate();
+        } else if (med.type === 'once') {
+            return diffDays === 0;
+        }
+        return false;
+    }
+
+    // --- Calendar View Logic ---
+    let currentCalendarDate = new Date();
+
+    function changeMonth(direction) {
+        currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = currentCalendarDate.getFullYear();
+        const month = currentCalendarDate.getMonth();
+
+        document.getElementById('calendar-title').textContent = `${year}年 ${month + 1}月`;
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const lastDayIndex = new Date(year, month + 1, 0).getDay();
+        const prevLastDay = new Date(year, month, 0).getDate();
+
+        let cells = '';
+
+        // 前月の余白
+        for (let i = firstDayIndex; i > 0; i--) {
+            const dayNum = prevLastDay - i + 1;
+            cells += `<div class="day-cell other-month"><div class="day-number">${dayNum}</div></div>`;
+        }
+
+        // 当月
+        const todayStr = formatDateStr(new Date());
+        const petMap = {};
+        appData.pets.forEach(p => petMap[p.id] = p.name);
+
+        for (let i = 1; i <= lastDay; i++) {
+            const mStr = String(month + 1).padStart(2, '0');
+            const dStr = String(i).padStart(2, '0');
+            const dateStr = `${year}-${mStr}-${dStr}`;
+            const isToday = (dateStr === todayStr) ? 'today' : '';
+
+            // この日に該当するタスクを抽出
+            let chipsHtml = '';
+            appData.medicines.forEach(med => {
+                if (isScheduledOnDate(med, dateStr)) {
+                    const isDone = appData.logs[dateStr]?.[med.id] || false;
+                    const doneClass = isDone ? 'done' : 'pending';
+                    const petName = petMap[med.petId] || '';
+                    chipsHtml += `
+                        <div class="schedule-chip ${doneClass}" onclick="openModal('${dateStr}', '${med.id}')" title="${petName}: ${med.name}">
+                            <span>${petName.slice(0,4)}: ${med.name}</span>
+                            <span>${isDone ? '✓' : ''}</span>
+                        </div>
+                    `;
+                }
+            });
+
+            cells += `
+                <div class="day-cell ${isToday}">
+                    <div class="day-number">${i}</div>
+                    ${chipsHtml}
+                </div>
+            `;
+        }
+
+        // 翌月の余白
+        const nextDays = 7 - ((firstDayIndex + lastDay) % 7);
+        if (nextDays < 7) {
+            for (let i = 1; i <= nextDays; i++) {
+                cells += `<div class="day-cell other-month"><div class="day-number">${i}</div></div>`;
+            }
+        }
+
+        document.getElementById('calendar-body').innerHTML = cells;
+        renderTodayTasks();
+    }
+
+    function formatDateStr(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    // --- Today Tasks & Checkboxes ---
+    function renderTodayTasks() {
+        const todayStr = formatDateStr(new Date());
+        document.getElementById('today-date-str').textContent = todayStr.replace(/-/g, '/');
+
+        const container = document.getElementById('today-tasks-container');
+        const petMap = {};
+        appData.pets.forEach(p => petMap[p.id] = p.name);
+
+        const todayMeds = appData.medicines.filter(med => isScheduledOnDate(med, todayStr));
+
+        if (todayMeds.length === 0) {
+            container.innerHTML = '<p class="empty-msg">本日の予定されているお薬・サプリはありません 🎉</p>';
+            return;
+        }
+
+        container.innerHTML = todayMeds.map(med => {
+            const isDone = appData.logs[todayStr]?.[med.id] || false;
+            const petName = petMap[med.petId] || '不明';
+            return `
+                <div class="today-task-item ${isDone ? 'completed' : ''}">
+                    <label class="checkbox-label">
+                        <input type="checkbox" ${isDone ? 'checked' : ''} onchange="toggleTask('${todayStr}', '${med.id}')">
+                        <span><strong>[${escapeHtml(petName)}]</strong> ${escapeHtml(med.name)}</span>
+                    </label>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function toggleTask(dateStr, medId) {
+        if (!appData.logs[dateStr]) {
+            appData.logs[dateStr] = {};
+        }
+        appData.logs[dateStr][medId] = !appData.logs[dateStr][medId];
+        saveData();
+        renderTodayTasks();
+        renderCalendar(); // カレンダーの表示も同期
+    }
+
+    // --- Modal Logic for Calendar Click ---
+    let activeModalData = null;
+
+    function openModal(dateStr, medId) {
+        activeModalData = { dateStr, medId };
+        const med = appData.medicines.find(m => m.id === medId);
+        const pet = appData.pets.find(p => p.id === med?.petId);
+        const isDone = appData.logs[dateStr]?.[medId] || false;
+
+        document.getElementById('modal-title').textContent = `${dateStr} の予定`;
+        document.getElementById('modal-desc').textContent = `ペット: ${pet?.name || '不明'}\n内容: ${med?.name || ''}`;
+        
+        const btn = document.getElementById('modal-toggle-btn');
+        btn.textContent = isDone ? '未完了に戻す' : '完了にする';
+        btn.className = isDone ? 'btn btn-secondary' : 'btn';
+
+        document.getElementById('task-modal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('task-modal').classList.remove('active');
+        activeModalData = null;
+    }
+
+    function toggleTaskStatusFromModal() {
+        if (!activeModalData) return;
+        const { dateStr, medId } = activeModalData;
+        if (!appData.logs[dateStr]) appData.logs[dateStr] = {};
+        appData.logs[dateStr][medId] = !appData.logs[dateStr][medId];
+        saveData();
+        closeModal();
+        renderCalendar();
+        renderTodayTasks();
+    }
+
+    function deleteScheduleFromModal() {
+        if (!activeModalData) return;
+        if (confirm('このお薬スケジュール自体を完全に削除しますか？')) {
+            appData.medicines = appData.medicines.filter(m => m.id !== activeModalData.medId);
+            saveData();
+            closeModal();
+            renderMedicines();
+            renderCalendar();
+            renderTodayTasks();
+        }
+    }
+
+    // --- Utility ---
+    function escapeHtml(str) {
+        return str.replace(/[&<>'"]/g, 
+            tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+        );
+    }
+
+    // --- Initial Load ---
+    window.onload = function() {
+        renderCalendar();
+        renderTodayTasks();
+    };
+</script>
+
+</body>
+</html>
